@@ -55,7 +55,7 @@ def load_data(directory):
 def main():
     if len(sys.argv) > 2:
         sys.exit("Usage: python degrees.py [directory]")
-    directory = sys.argv[1] if len(sys.argv) == 2 else "large"
+    directory = sys.argv[1] if len(sys.argv) == 2 else "small"
 
     # Load data from files into memory
     print("Loading data...")
@@ -93,7 +93,30 @@ def shortest_path(source, target):
     """
 
     # TODO
-    raise NotImplementedError
+    path = []
+    start = Node(state=source, parent=None, action=None)
+    frontier = QueueFrontier()
+    frontier.add(start)
+    explored = set()
+
+    while True:
+        if frontier.empty():
+            return None
+        
+        node = frontier.remove()
+        explored.add(node.state)
+
+        for action, state in neighbors_for_person(node.state):
+            if not frontier.contains_state(state) and state not in explored:
+                child = Node(state=state, parent=node, action=action)
+                if child.state == target:
+                    while child.parent is not None:
+                        couple = (child.action, child.state)
+                        path.append(couple)
+                        child = child.parent
+                    path.reverse()
+                    return path
+                frontier.add(child)
 
 
 def person_id_for_name(name):
