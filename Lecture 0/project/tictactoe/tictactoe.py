@@ -110,9 +110,10 @@ def minimax(board):
     """
     if terminal(board):
         return None
+    
+    optimal = None
 
     if player(board) == X:
-        optimal = None
         maxVal = -math.inf
         for action in actions(board):
             max = optimizeO(result(board, action))
@@ -120,7 +121,6 @@ def minimax(board):
                 maxVal = max
                 optimal = action
     else:
-        optimal = None
         minVal = math.inf
         for action in actions(board):
             min = optimizeX(result(board, action))
