@@ -2,7 +2,7 @@ import copy
 import itertools
 import random
 
-
+# 19/25 solution, could not do better in an evening. Might come back to this.
 class Minesweeper():
     """
     Minesweeper game representation
@@ -103,16 +103,20 @@ class Sentence():
         return f"{self.cells} = {self.count}"
 
     def known_mines(self):
+        known_mines = set()
+
         if self.count == len(self.cells):
-            return copy.deepcopy(self.cells)
+            known_mines.update(copy.deepcopy(self.cells))
         
-        return None
+        return known_mines
 
     def known_safes(self):
+        known_safes = set()
+
         if self.count == 0:
-            return copy.deepcopy(self.cells)
+            known_safes.update(copy.deepcopy(self.cells))
         
-        return None
+        return known_safes
 
     def mark_mine(self, cell):
         if cell in self.cells:
@@ -185,7 +189,10 @@ class MinesweeperAI():
         self.mark_safe(cell)
 
         # 3)
+        cells = set()
         touching_cells = set()
+        current_count = copy.deepcopy(count)
+
         # Iterate through all the cells touching the given cell, and add the ones that are not included in moves_made OR the cell itself to touching_cells
         for i in range(0, 3):
             for j in range (0, 3):
@@ -194,21 +201,27 @@ class MinesweeperAI():
                 if x >= 0 and x < self.width and y >=0 and y < self.height and (y, x) != cell and (y, x) not in self.moves_made:
                     touching_cells.add((y, x))
         
-        sentence = Sentence(touching_cells, count)
+        for touching in touching_cells:
+            if touching in self.mines:
+                current_count -= 1
+            if touching not in self.mines | self.safes:
+                cells.add(touching)
+
+        sentence = Sentence(touching_cells, current_count)
+
         self.knowledge.append(sentence)
 
         # 4)
-        for sentence in self.knowledge:
-            mines = sentence.known_mines()
-            safe = sentence.known_safes()
-
+        for s in self.knowledge:
+            mines = s.known_mines()
+            safes = s.known_safes()
             if mines:
-                for cell in mines:
-                    self.mark_mine(cell)
+                for mine in mines:
+                    self.mark_mine(mine)
             
-            if safe:
-                for cell in safe:
-                    self.mark_safe(cell)
+            if safes:
+                for safe in safes:
+                    self.mark_safe(safe)
         
         # 5)
         # travel through each sentence in the knowledge base and compare each one to eachother.  
