@@ -1,3 +1,4 @@
+import copy
 import itertools
 import random
 
@@ -102,30 +103,25 @@ class Sentence():
         return f"{self.cells} = {self.count}"
 
     def known_mines(self):
-        """
-        Returns the set of all cells in self.cells known to be mines.
-        """
-        raise NotImplementedError
+        if self.count == len(self.cells):
+            return copy.deepcopy(self.cells)
+        
+        return None
 
     def known_safes(self):
-        """
-        Returns the set of all cells in self.cells known to be safe.
-        """
-        raise NotImplementedError
+        if self.count == 0:
+            return copy.deepcopy(self.cells)
+        
+        return None
 
     def mark_mine(self, cell):
-        """
-        Updates internal knowledge representation given the fact that
-        a cell is known to be a mine.
-        """
-        raise NotImplementedError
+        if cell in self.cells:
+            self.count -= 1
+            self.cells.discard(cell)
 
     def mark_safe(self, cell):
-        """
-        Updates internal knowledge representation given the fact that
-        a cell is known to be safe.
-        """
-        raise NotImplementedError
+        if cell in self.cells:
+            self.cells.discard(cell)
 
 
 class MinesweeperAI():
@@ -182,7 +178,47 @@ class MinesweeperAI():
             5) add any new sentences to the AI's knowledge base
                if they can be inferred from existing knowledge
         """
-        raise NotImplementedError
+        # 1)
+        self.moves_made.add(cell)
+
+        # 2)
+        self.mark_safe(cell)
+
+        # 3)
+        touching_cells = set()
+        # Iterate through all the cells touching the given cell, and add the ones that are not included in moves_made OR the cell itself to touching_cells
+        for i in range(0, 3):
+            for j in range (0, 3):
+                y = i + cell[0] - 1
+                x = j + cell[1] - 1
+                if x >= 0 and x < self.width and y >=0 and y < self.height and (y, x) != cell and (y, x) not in self.moves_made:
+                    touching_cells.add((y, x))
+        
+        sentence = Sentence(touching_cells, count)
+        self.knowledge.append(sentence)
+
+        # 4)
+        for sentence in self.knowledge:
+            mines = sentence.known_mines()
+            safe = sentence.known_safes()
+
+            if mines:
+                for cell in mines:
+                    self.mark_mine(cell)
+            
+            if safe:
+                for cell in safe:
+                    self.mark_safe(cell)
+        
+        # 5)
+        # travel through each sentence in the knowledge base and compare each one to eachother.  
+        for i, sentencei in enumerate(self.knowledge):
+            for j, sentencej in enumerate(self.knowledge):
+                # if one sentence is a subset of another AND they are not the same sentence, create and append a new sentence that contains only the cells NOT within the subset, and subtract the subset count. 
+                # This is following the logic from the final inference shown in the project's background.
+                if sentencei.cells in sentencej.cells and i != j:
+                    newSentence = Sentence(set(sentencej.cells - sentencei.cells), sentencej.count - sentencei.count)
+                    self.knowledge.append(newSentence)
 
     def make_safe_move(self):
         """
@@ -193,7 +229,12 @@ class MinesweeperAI():
         This function may use the knowledge in self.mines, self.safes
         and self.moves_made, but should not modify any of those values.
         """
-        raise NotImplementedError
+        if self.safes:
+            for cell in self.safes:
+                if cell not in self.moves_made:
+                    return copy.deepcopy(cell)
+            
+        return None
 
     def make_random_move(self):
         """
@@ -202,4 +243,19 @@ class MinesweeperAI():
             1) have not already been chosen, and
             2) are not known to be mines
         """
-        raise NotImplementedError
+
+        if not self.moves_made: 
+            return (random.randint(0, self.height - 1), random.randint(0, self.width - 1))
+
+        board = set()
+        for i in range(0, self.height):
+            for j in range(0, self.width):
+                board.add((i, j))
+        
+        uncertain_cells = (board - self.moves_made) - self.mines
+
+        if uncertain_cells:
+            return uncertain_cells.pop()
+        
+        return None
+                
