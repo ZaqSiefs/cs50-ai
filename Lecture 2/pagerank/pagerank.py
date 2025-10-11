@@ -57,7 +57,19 @@ def transition_model(corpus, page, damping_factor):
     linked to by `page`. With probability `1 - damping_factor`, choose
     a link at random chosen from all pages in the corpus.
     """
-    raise NotImplementedError
+    transition_prob = dict()
+
+    if (len(corpus[page]) > 0):
+        damping_prob = (1 - damping_factor) / len(corpus)
+        transition_prob = dict.fromkeys(corpus.keys(), damping_prob)
+
+        for link in corpus[page]:
+            transition_prob[link] += damping_factor / len(corpus[page])
+    else:
+        for p in corpus:
+            transition_prob[p] = 1 / len(corpus)
+
+    return transition_prob
 
 
 def sample_pagerank(corpus, damping_factor, n):
@@ -69,7 +81,17 @@ def sample_pagerank(corpus, damping_factor, n):
     their estimated PageRank value (a value between 0 and 1). All
     PageRank values should sum to 1.
     """
-    raise NotImplementedError
+    pagerank_total = dict.fromkeys(corpus.keys(), 0)
+
+    page = random.choice(list(corpus.keys()))
+    pagerank_total[page] += 1
+
+    for _ in range(n):
+        transition = transition_model(corpus, page, damping_factor)
+        page = random.choices(list(transition.keys()), weights=list(transition.values()), k=1)[0]
+        pagerank_total[page] += 1
+
+    return {key: value / n for key, value in pagerank_total.items()}
 
 
 def iterate_pagerank(corpus, damping_factor):
@@ -81,7 +103,32 @@ def iterate_pagerank(corpus, damping_factor):
     their estimated PageRank value (a value between 0 and 1). All
     PageRank values should sum to 1.
     """
-    raise NotImplementedError
+    N = len(corpus)
+    pagerank = dict.fromkeys(corpus.keys(), 1 / N)
+    damping_prob = (1 - damping_factor) / N
+
+    delta = dict.fromkeys(corpus.keys(), 1)
+    TOLERANCE = 0.001
+
+    while any(change >= TOLERANCE for change in list(delta.values())):
+        for page in corpus:
+            # List of pages to iterate for the summation
+            # if page has no links, treat as if it links to all pages - otherwise only links in page
+            i_set = [key for key, links in corpus.items() if len(links) == 0 or page in links]
+            # value of the summation
+            i_sum = 0
+
+            # perform summation
+            for i in i_set:
+                numlinks = len(corpus[i]) if len(corpus[i]) > 0 else N
+                i_sum += damping_factor * (pagerank[i] / numlinks)
+
+            # finish equation
+            cur_rank = damping_prob + i_sum
+            delta[page] = abs(pagerank[page] - cur_rank)
+            pagerank[page] = cur_rank
+
+    return pagerank
 
 
 if __name__ == "__main__":
