@@ -118,7 +118,28 @@ class CrosswordCreator():
         Return True if a revision was made to the domain of `x`; return
         False if no revision was made.
         """
-        raise NotImplementedError
+        revised = False
+        safe = False
+        to_remove = set()
+
+        print(f"Before: {self.domains}\n")
+        for x_word in self.domains[x]:
+            for y_word in self.domains[y]:
+                if self.crossword.orverlaps(x_word, y_word)is not None:
+                    safe = True
+                    break
+            if not safe:
+                to_remove.add(x_word)
+            else:
+                safe = False
+        
+        if bool(to_remove):
+            self.domains[x] -= to_remove
+
+
+        print(f"\nAfter: {self.domains}")
+        return revised
+
 
     def ac3(self, arcs=None):
         """
@@ -129,7 +150,9 @@ class CrosswordCreator():
         Return True if arc consistency is enforced and no domains are empty;
         return False if one or more domains end up empty.
         """
-        raise NotImplementedError
+        # if arcs is None:
+        #     arcs = []
+
 
     def assignment_complete(self, assignment):
         """
