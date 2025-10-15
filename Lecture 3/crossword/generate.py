@@ -125,7 +125,7 @@ class CrosswordCreator():
         print(f"Before: {self.domains}\n")
         for x_word in self.domains[x]:
             for y_word in self.domains[y]:
-                if self.crossword.orverlaps(x_word, y_word)is not None:
+                if self.crossword.overlaps(x_word, y_word) is not None:
                     safe = True
                     break
             if not safe:
@@ -135,7 +135,6 @@ class CrosswordCreator():
         
         if bool(to_remove):
             self.domains[x] -= to_remove
-
 
         print(f"\nAfter: {self.domains}")
         return revised
@@ -150,8 +149,26 @@ class CrosswordCreator():
         Return True if arc consistency is enforced and no domains are empty;
         return False if one or more domains end up empty.
         """
-        # if arcs is None:
-        #     arcs = []
+        # adds every unique arc to arcs when nothing is provided
+        if arcs is None:
+            variables = set()
+            for variable, overlap in self.crossword.overlaps.items():
+                if overlap is not None:
+                    variables.add(tuple(sorted(variable)))
+            arcs = list(variables)
+        
+        while list:
+            dequeue = list.pop()
+            x = dequeue[0]
+            y = dequeue[1]
+            if self.revise(x, y):
+                if not self.domains[x]:
+                    return False
+                for z in self.crossword.neighbors[x] - y:
+                    arcs.append(z, x)
+                    
+        return True
+
 
 
     def assignment_complete(self, assignment):
