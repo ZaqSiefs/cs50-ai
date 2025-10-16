@@ -166,7 +166,7 @@ class CrosswordCreator():
                     return False
                 for z in self.crossword.neighbors[x] - y:
                     arcs.append(z, x)
-                    
+
         return True
 
 
@@ -176,7 +176,13 @@ class CrosswordCreator():
         Return True if `assignment` is complete (i.e., assigns a value to each
         crossword variable); return False otherwise.
         """
-        raise NotImplementedError
+        #TODO ensure every variable exists in assignment, and is assigned to anything but None.
+
+        for variable in self.domains:
+            if variable not in assignment or assignment[variable] is None:
+                return False
+        
+        return True
 
     def consistent(self, assignment):
         """
