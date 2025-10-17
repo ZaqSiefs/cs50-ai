@@ -118,26 +118,23 @@ class CrosswordCreator():
         Return True if a revision was made to the domain of `x`; return
         False if no revision was made.
         """
-        revised = False
-        safe = False
-        to_remove = set()
+        x_overlap, y_overlap = self.crossword.overlaps[x, y]
+        revision = False
+        domains_copy = copy.deepcopy(self.domains)
 
-        print(f"Before: {self.domains}\n")
-        for x_word in self.domains[x]:
-            for y_word in self.domains[y]:
-                if self.crossword.overlaps(x_word, y_word) is not None:
-                    safe = True
-                    break
-            if not safe:
-                to_remove.add(x_word)
-            else:
-                safe = False
+        if x_overlap:
+            for x_word in domains_copy[x]:
+                matched = False
+                for y_word in self.domains[y]:
+                    if x_word[x_overlap] == y_word[y_overlap]:
+                        matched = True
+                        break
+                if matched:
+                    continue
+                else:
+                    self.domains[x].remove(x_word)
         
-        if bool(to_remove):
-            self.domains[x] -= to_remove
-
-        print(f"\nAfter: {self.domains}")
-        return revised
+        return revision
 
 
     def ac3(self, arcs=None):
@@ -157,13 +154,13 @@ class CrosswordCreator():
                 for neighbor in self.crossword.neighbors(variable):
                     if self.crossword.overlaps[variable, neighbor] is not None:
                         queue.append((variable, neighbor))
-
-        queue = copy.deepcopy(arcs)
+        else:
+            queue = copy.deepcopy(arcs)
         
         while queue:
-            x, y = list.pop()
+            x, y = queue.pop(0)
             if self.revise(x, y):
-                if not self.domains[x]:
+                if len(self.domains[x]) == 0:
                     return False
                 for z in self.crossword.neighbors[x] - y:
                     queue.append(z, x)
@@ -226,7 +223,9 @@ class CrosswordCreator():
             
             unordered_domain[word] = words_eliminated
 
-        return {word: eliminated for word, eliminated in sorted(unordered_domain.items(), key=lambda item: item[1])}
+        ordered_domain = {word: eliminated for word, eliminated in sorted(unordered_domain.items(), key=lambda item: item[1])}
+
+        return [*ordered_domain]
 
 
     def select_unassigned_variable(self, assignment):
